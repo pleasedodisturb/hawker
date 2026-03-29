@@ -1,105 +1,114 @@
 # Hawker
 
-**AI-powered second-hand selling assistant — from photo to cash.**
+**Autonomous AI marketplace agent — snap a photo, get it sold.**
 
-Hawker automates the entire resale workflow: market research, listing creation, cross-platform publishing, buyer communication, and sale tracking. One photo in, money out.
+Hawker is an open-source AI agent that automates selling used items across multiple marketplaces. From a single photo, it identifies the item, researches market prices, generates bilingual listings, publishes across platforms, communicates with buyers, adjusts pricing, and tracks sales to completion.
+
+Built as a suite of [MCP](https://modelcontextprotocol.io/) servers. Works with [Goose](https://github.com/block/goose) and any MCP-compatible agent.
 
 ---
 
 ## The Problem
 
-You have 10 things to sell. For each item you need to:
-1. Research what it's worth (check Kleinanzeigen, eBay, FB Marketplace, Vinted)
-2. Write a listing title + description (in the right language, with the right keywords)
-3. Take photos and upload them to 2-3 platforms
-4. Copy-paste the listing across platforms with platform-specific formatting
+You have 10 things to sell. For each one you need to:
+
+1. Research what it's worth across 3-4 platforms
+2. Write a compelling title + description in the right language
+3. Take photos and upload to each platform separately
+4. Copy-paste with platform-specific formatting
 5. Answer "Ist noch da?" 47 times
 6. Negotiate with lowballers
-7. Coordinate pickup/shipping
+7. Coordinate pickup or shipping
 8. Track what sold, what didn't, what needs a price drop
 
-Multiply by 10 items. Nobody does this. The stuff sits in a corner.
+Multiply by 10 items. **Nobody does this.** The stuff sits in a corner. 117 million unused electronics in German households alone.
 
 ## The Solution
 
-Hawker is a CLI/web tool that handles the mechanical parts so you just make decisions.
+Hawker reduces selling to **two touchpoints**:
 
-### Core Features
+1. **Photograph your items** (batch 10 in 10 minutes)
+2. **Hand off the packages** when they sell
 
-#### 1. Smart Pricing (Market Research)
-- Snap a photo or describe the item
-- Hawker scrapes Kleinanzeigen, eBay Kleinanzeigen, FB Marketplace, Vinted for comparable sold/active listings
-- Returns: estimated price range, average time to sell, recommended asking price
-- "Your Philips OptiGrill Elite + waffle plates: €60-90 on Kleinanzeigen, avg 5 days to sell. Suggest: €79 VB"
+Everything in between is handled by the agent.
 
-#### 2. Listing Generator
-- Photo(s) → AI generates title, description, category, shipping options
-- Multi-language support (DE/EN at minimum — Frankfurt has both markets)
-- SEO-optimized titles (the right keywords that Kleinanzeigen search actually finds)
-- Platform-specific formatting (Kleinanzeigen vs FB Marketplace vs Vinted vs eBay)
-- One approval flow: review generated listing, edit if needed, approve
+```
+Camera → Identify → Price → List → Publish → Negotiate → Sell → Track
+  📸       🔍        💰      ✍️       🚀        💬         🤝      📊
+```
 
-#### 3. Cross-Platform Publishing
-- Publish to multiple platforms in one action
-- Platform adapters: Kleinanzeigen, FB Marketplace, Vinted, eBay Kleinanzeigen
-- Track which platforms each item is listed on
-- Auto-delist from other platforms when sold on one
+## How It Works
 
-#### 4. Buyer Communication Bot
-- Auto-reply to "Ist noch da?" → "Ja, noch verfügbar! Wann passt Abholung?"
-- Handle lowball offers with configurable floor price ("Unter €60 gehe ich nicht")
-- Negotiate within parameters you set
-- Escalate to you only for serious buyers ready to commit
-- Multi-platform inbox aggregation
+| Stage | What Happens |
+|-------|-------------|
+| **Photo Input** | Point camera at item. Optional voice notes for condition details. |
+| **Identification** | Vision AI identifies brand, model, condition, specs. |
+| **Price Research** | Scrapes comparable listings across platforms, filters scam prices, sets optimal price. |
+| **Listing Generation** | Generates DE+EN title, description, SEO keywords, platform-specific formatting. |
+| **Cross-Platform Publish** | Publishes to Kleinanzeigen, eBay, Vinted simultaneously. |
+| **Buyer Communication** | Auto-replies, negotiates within your bounds, detects scams, schedules pickups. |
+| **Sale Tracking** | Auto-delists on other platforms when sold. Tracks revenue and suggests price adjustments. |
 
-#### 5. Sale Tracker Dashboard
-- Pipeline view: Draft → Listed → Negotiating → Sold → Complete
-- Per-item: asking price, offers received, days listed, platform performance
-- Total: items listed, sold, revenue, avg days to sell
-- Nudges: "OptiGrill listed 14 days, no offers. Drop price to €59?"
-- Revenue goal tracking
+## Autonomy Modes
 
-#### 6. Smart Relisting
-- Auto price drops on stale listings (configurable schedule)
-- Bump/refresh listings on platforms that support it
-- Seasonal awareness ("winter jackets sell better in October")
-- Cross-platform A/B testing (different prices on different platforms)
+| Mode | Agent Does | You Do |
+|------|-----------|--------|
+| **Supervised** | Generate listings, suggest prices | Approve everything |
+| **Semi-auto** | Publish, chat with buyers | Approve sales |
+| **Full auto** | Everything including negotiation | Hand off packages |
 
-### Stretch Features
-- **Shipping integration**: auto-generate DHL/Hermes labels for Vinted sales
-- **Batch mode**: photograph 10 items, Hawker processes all overnight
-- **Voice listing**: describe item verbally, Hawker creates the listing
-- **Receipt/warranty finder**: "I bought this on Amazon, find the order for warranty transfer"
-- **Donation mode**: items that don't sell after X days → auto-list as "Zu verschenken" or suggest Oxfam
+## Target Platforms
 
----
+| Platform | Integration | Market |
+|----------|------------|--------|
+| **Kleinanzeigen** | Browser automation (Playwright) | 36M monthly users, dominant in DE |
+| **eBay Germany** | Official REST API | Full API, zero seller fees |
+| **Vinted** | Browser automation | Fashion/accessories, integrated shipping |
+| **FB Marketplace** | Best-effort | Lower priority in Germany |
 
-## Tech Stack (Ideas)
+## Architecture
 
-- **Backend**: Python (FastAPI) or TypeScript
-- **AI**: Claude API for listing generation, image analysis, buyer chat
-- **Scraping**: Playwright/Puppeteer for market research
-- **Platform APIs**: Where available (eBay API, Vinted API), scraping where not (Kleinanzeigen)
-- **Frontend**: Simple web dashboard or CLI-first
-- **Database**: SQLite (keep it simple)
-- **Notifications**: Telegram bot for buyer messages that need attention
+Hawker is built as composable **MCP servers** — each marketplace capability is an independent tool:
 
----
+- **`marketplace-publisher`** — publish, edit, delist, read/send messages per platform
+- **`pricing-research`** — search comparables, estimate prices, track price history
+- **`listing-generator`** — generate listings, optimize titles, translate DE↔EN
+- **`inventory-manager`** — track items, record sales, suggest actions
+
+Any MCP-compatible agent (Goose, Claude Code, etc.) can use these tools independently.
+
+## Tech Stack
+
+- **Language:** Rust (core) + Python (AI/scraping)
+- **Agent Platform:** [Goose](https://github.com/block/goose) (MCP-native)
+- **AI:** Claude API (vision, listing generation, buyer communication)
+- **Browser Automation:** Playwright (Kleinanzeigen, Vinted)
+- **Marketplace API:** eBay REST API
+- **Database:** SQLite
+- **Frontend:** PWA (mobile-first, camera-native)
+- **Notifications:** Telegram
+
+## Status
+
+**Research & planning complete. Ready to build.**
+
+- [x] Domain research — German C2C marketplace ecosystem analyzed
+- [x] Market gap confirmed — no AI-powered cross-platform seller tool exists
+- [x] Real-world validation — 18 items inventoried, 12 listed on Kleinanzeigen
+- [x] Automation proven — Playwright scripts for Kleinanzeigen batch editing
+- [x] Product brainstorming — 103 ideas organized into V1/V2/V3 roadmap
+- [ ] MVP development — in progress
 
 ## Why "Hawker"
 
 A hawker is a street vendor who sells goods by calling out to passersby. Loud, efficient, knows their market, closes deals fast. That's the vibe.
 
----
+## Origin
 
-## Status
+2026-03-13, 6am, Frankfurt. After manually listing the 9th item on Kleinanzeigen — a Samsung TV, a Stream Deck, two suitcases, a CalDigit dock, an OptiGrill — the thought hit: *"this should be a product."*
 
-**Idea phase.** Born from the pain of manually listing 10+ items on Kleinanzeigen at 6am.
-
-Up next. Building this as both a real tool and a portfolio piece — shipping products is the best proof you're a builder.
+The pain is real. The market gap is confirmed. The agent is coming.
 
 ---
 
-## Origin Story
-
-2026-03-13, 6am, Frankfurt. Vitalik has a Samsung Q95T, Homey Pro, Philips Syncbox, CalDigit TS3, two Horizn suitcases, bike seats, an OptiGrill, an IKEA Poäng, and a BenQ Halo to sell. After adding the 9th item to a sell list in a financial tracking repo, the thought hit: "this should be a product."
+**License:** MIT | **Author:** [Vitalik](https://github.com/pleasedodisturb)
